@@ -1,4 +1,4 @@
-module toombs/data-access
+module toombs/dataAccess
 
 go 1.20
 

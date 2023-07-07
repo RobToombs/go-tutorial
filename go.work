@@ -5,5 +5,6 @@ use (
 	./greetings
 	./hello
 	./workspaces
-	./data-access
+	./dataAccess
+	./webServiceGin
 )
