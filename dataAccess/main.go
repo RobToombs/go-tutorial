@@ -19,6 +19,9 @@ type Album struct {
 var conn *pgx.Conn
 
 func main() {
+	EstablishConnection()
+	defer CloseConnection()
+
 	albums, err := AlbumsByArtist("John Coltrane")
 	if err != nil {
 		fmt.Printf("Error collecting albums by artist: %v\n", err)
@@ -46,7 +49,7 @@ func main() {
 	fmt.Printf("ID of added album: %v\n", album.ID)
 }
 
-func establishConnection() {
+func EstablishConnection() {
 	if conn == nil {
 		var err error
 		conn, err = pgx.Connect(context.Background(), "postgresql://postgres:postgres@localhost:5432/recordings")
@@ -57,17 +60,14 @@ func establishConnection() {
 	}
 }
 
-func closeConnection() {
+func CloseConnection() {
 	if conn != nil {
 		conn.Close(context.Background())
 	}
 }
 
-// AlbumsByArtist albumsByArtist queries for albums that have the specified artist name.
+// AlbumsByArtist queries for albums that have the specified artist name.
 func AlbumsByArtist(name string) ([]Album, error) {
-	establishConnection()
-	defer closeConnection()
-
 	// An albums slice to hold data from returned rows.
 	var albums []Album
 
@@ -97,9 +97,6 @@ func AlbumsByArtist(name string) ([]Album, error) {
 }
 
 func AlbumByID(id int64) (Album, error) {
-	establishConnection()
-	defer closeConnection()
-
 	row := conn.QueryRow(context.Background(), "SELECT * FROM album WHERE id = $1", id)
 	alb := rowToAlbum(row)
 
@@ -109,9 +106,6 @@ func AlbumByID(id int64) (Album, error) {
 // AddAlbum adds the specified album to the database,
 // returning the album ID of the new entry
 func AddAlbum(alb Album) (int64, error) {
-	establishConnection()
-	defer closeConnection()
-
 	//var result Album
 	err := conn.QueryRow(context.Background(), "INSERT INTO album (title, artist, price) VALUES ($1, $2, $3) RETURNING id", alb.Title, alb.Artist, alb.Price).Scan(&alb.ID)
 	if err != nil {
@@ -124,9 +118,6 @@ func AddAlbum(alb Album) (int64, error) {
 // AddAlbumPtr adds the specified album to the database,
 // but updates the provided album ID
 func AddAlbumPtr(alb *Album) error {
-	establishConnection()
-	defer closeConnection()
-
 	row := conn.QueryRow(context.Background(), "INSERT INTO album (title, artist, price) VALUES ($1, $2, $3) RETURNING id", alb.Title, alb.Artist, alb.Price)
 	err := row.Scan(&alb.ID)
 	if err != nil {
@@ -137,9 +128,6 @@ func AddAlbumPtr(alb *Album) error {
 }
 
 func Albums() ([]Album, error) {
-	establishConnection()
-	defer closeConnection()
-
 	rows, err := conn.Query(context.Background(), "SELECT * FROM album")
 	if err != nil {
 		return nil, fmt.Errorf("Albums: %v", err)
